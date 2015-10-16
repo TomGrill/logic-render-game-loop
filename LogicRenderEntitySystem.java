@@ -17,17 +17,9 @@
 
 package de.tomgrill.artemis;
 
-import com.artemis.Aspect;
-import com.artemis.systems.EntityProcessingSystem;
-
 /**
- * Simple marker class to mark all EntityProcessingSystem which only run when the logic is processed
- *
+ * Simple marker interface to declare a EntitySystem to be processed only in the logic part of the game loop
  */
-public abstract class LogicEntityProcessingSystem extends EntityProcessingSystem {
-
-	public LogicEntityProcessingSystem(Aspect.Builder aspect) {
-		super(aspect);
-	}
+public interface LogicRenderEntitySystem {
 }
 

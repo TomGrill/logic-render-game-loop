@@ -54,11 +54,11 @@ public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
 
 		while (accumulator >= logicTickTime) {
 			/**
-			 * processing all entity systems inheriting from {@link LogicEntityProcessingSystem}
+			 * processing all entity systems inheriting from {@link LogicRenderEntitySystem}
 			 */
 			for (int i = 0, s = systems.size(); s > i; i++) {
 				BaseSystem system = (BaseSystem) systemsData[i];
-				if (system instanceof LogicEntityProcessingSystem) {
+				if (system instanceof LogicRenderEntitySystem) {
 					system.process();
 					updateEntityStates();
 				}
@@ -68,12 +68,12 @@ public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
 		}
 
 		/**
-		 * processing all NON {@link LogicEntityProcessingSystem} inheriting entity systems
+		 * processing all NON {@link LogicRenderEntitySystem} inheriting entity systems
 		 */
 		world.setDelta(deltaTime);
 		for (int i = 0, s = systems.size(); s > i; i++) {
 			BaseSystem system = (BaseSystem) systemsData[i];
-			if (!(system instanceof LogicEntityProcessingSystem)) {
+			if (!(system instanceof LogicRenderEntitySystem)) {
 				system.process();
 				updateEntityStates();
 			}
