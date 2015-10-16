@@ -21,27 +21,50 @@ import com.artemis.BaseSystem;
 import com.artemis.SystemInvocationStrategy;
 import com.artemis.utils.Bag;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Array;
 
 /**
  * Implements a game loop based on this excellent blog post:
  * http://gafferongames.com/game-physics/fix-your-timestep/
  */
 public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
-	private float logicTickTime = 1f / 25; // step is here 1/25, 25 times per second.
+	private float logicTickTime; // step is here 1/25, 25 times per second.
 
 	private float accumulator;
 
+	private Array<BaseSystem> logicMarkedSystems;
+	private Array<BaseSystem> otherSystems;
+
+
+	private boolean systemsSorted = false;
+
 	public GameLoopSystemInvocationStrategy() {
+		this(25);
 	}
 
 	public GameLoopSystemInvocationStrategy(int logicTicksPerSecond) {
 		logicTickTime = 1f / logicTicksPerSecond;
+
+		logicMarkedSystems = new Array<BaseSystem>();
+		otherSystems = new Array<BaseSystem>();
 	}
+
 
 	@Override
 	protected void process(Bag<BaseSystem> systems) {
+		if (!systemsSorted) {
+			Object[] systemsData = systems.getData();
+			for (int i = 0, s = systems.size(); s > i; i++) {
+				BaseSystem system = (BaseSystem) systemsData[i];
+				if (system instanceof LogicRenderMarker) {
+					logicMarkedSystems.add(system);
+				} else {
+					otherSystems.add(system);
+				}
+			}
+			systemsSorted = true;
+		}
 
-		Object[] systemsData = systems.getData();
 
 		float deltaTime = Gdx.graphics.getDeltaTime();
 
@@ -54,31 +77,24 @@ public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
 
 		while (accumulator >= logicTickTime) {
 			/**
-			 * processing all entity systems inheriting from {@link LogicRenderEntitySystem}
+			 * processing all entity systems inheriting from {@link LogicRenderMarker}
 			 */
-			for (int i = 0, s = systems.size(); s > i; i++) {
-				BaseSystem system = (BaseSystem) systemsData[i];
-				if (system instanceof LogicRenderEntitySystem) {
-					system.process();
-					updateEntityStates();
-				}
+			for (int i = 0; i < logicMarkedSystems.size; i++) {
+				logicMarkedSystems.get(i).process();
+				updateEntityStates();
 			}
 
 			accumulator -= logicTickTime;
 		}
 
 		/**
-		 * processing all NON {@link LogicRenderEntitySystem} inheriting entity systems
+		 * processing all NON {@link LogicRenderMarker} inheriting entity systems
 		 */
 		world.setDelta(deltaTime);
-		for (int i = 0, s = systems.size(); s > i; i++) {
-			BaseSystem system = (BaseSystem) systemsData[i];
-			if (!(system instanceof LogicRenderEntitySystem)) {
-				system.process();
-				updateEntityStates();
-			}
+		for (int i = 0; i < otherSystems.size; i++) {
+			otherSystems.get(i).process();
+			updateEntityStates();
 		}
-
 
 	}
 }
