@@ -28,12 +28,12 @@ import com.badlogic.gdx.utils.Array;
  * http://gafferongames.com/game-physics/fix-your-timestep/
  */
 public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
-	private float logicTickTime; // step is here 1/25, 25 times per second.
+	private final float logicTickTime; // step is here 1/25, 25 times per second.
 
 	private float accumulator;
 
-	private Array<BaseSystem> logicMarkedSystems;
-	private Array<BaseSystem> otherSystems;
+	private final Array<BaseSystem> logicMarkedSystems;
+	private final Array<BaseSystem> otherSystems;
 
 
 	private boolean systemsSorted = false;
