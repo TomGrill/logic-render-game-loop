@@ -20,38 +20,41 @@ package de.tomgrill.artemis;
 import com.artemis.BaseSystem;
 import com.artemis.SystemInvocationStrategy;
 import com.artemis.utils.Bag;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Array;
+
+import java.util.concurrent.TimeUnit;
+
+import de.tomgrill.snakerino.Globals;
 
 /**
  * Implements a game loop based on this excellent blog post:
  * http://gafferongames.com/game-physics/fix-your-timestep/
+ *
+ * To avoid floating point rounding errors we only use fixed point numbers for calculations.
  */
 public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
-	private final float logicTickTime; // step is here 1/25, 25 times per second.
-
-	private float accumulator;
 
 	private final Array<BaseSystem> logicMarkedSystems;
 	private final Array<BaseSystem> otherSystems;
 
+	private long nanosPerLogicTick; // ~ dt
+	private long currentTime = System.nanoTime();
+
+	private long accumulator;
 
 	private boolean systemsSorted = false;
 
 	public GameLoopSystemInvocationStrategy() {
-		this(25);
+		this(40);
 	}
 
-	public GameLoopSystemInvocationStrategy(int logicTicksPerSecond) {
-		logicTickTime = 1f / logicTicksPerSecond;
-
+	public GameLoopSystemInvocationStrategy(int millisPerLogicTick) {
+		this.nanosPerLogicTick = TimeUnit.MILLISECONDS.toNanos(millisPerLogicTick);
 		logicMarkedSystems = new Array<BaseSystem>();
 		otherSystems = new Array<BaseSystem>();
 	}
 
-
-	@Override
-	protected void process(Bag<BaseSystem> systems) {
+	private void sortSystems(Bag<BaseSystem> systems) {
 		if (!systemsSorted) {
 			Object[] systemsData = systems.getData();
 			for (int i = 0, s = systems.size(); s > i; i++) {
@@ -64,34 +67,60 @@ public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
 			}
 			systemsSorted = true;
 		}
+	}
 
-
-		float deltaTime = Gdx.graphics.getDeltaTime();
-
-		if (deltaTime > 0.25f) {
-			deltaTime = 0.25f; // Note: Avoid spiral of death
+	@Override
+	protected void process(Bag<BaseSystem> systems) {
+		if (!systemsSorted) {
+			sortSystems(systems);
 		}
-		accumulator += deltaTime;
 
-		world.setDelta(logicTickTime);
+		long newTime = System.nanoTime();
+		long frameTime = newTime - currentTime;
 
-		while (accumulator >= logicTickTime) {
-			/**
-			 * processing all entity systems inheriting from {@link LogicRenderMarker}
-			 */
+		if (frameTime > 250000000) {
+			frameTime = 250000000;    // Note: Avoid spiral of death
+		}
+
+		currentTime = newTime;
+		accumulator += frameTime;
+
+		/**
+		 * Uncomment this line if you use the world's delta within your systems.
+		 * I recommend to use a fixed value for your logic delta like millisPerLogicTick or nanosPerLogicTick
+		 */
+//		world.setDelta(nanosPerLogicTick * 0.000000001f);
+
+		while (accumulator >= nanosPerLogicTick) {
+			/** Process all entity systems inheriting from {@link LogicRenderMarker} */
 			for (int i = 0; i < logicMarkedSystems.size; i++) {
+				/**
+				 * Make sure your systems keep the current state before calculating the new state
+				 * else you cannot interpolate later on when rendering
+				 */
 				logicMarkedSystems.get(i).process();
 				updateEntityStates();
 			}
 
-			accumulator -= logicTickTime;
+			accumulator -= nanosPerLogicTick;
 		}
 
 		/**
-		 * processing all NON {@link LogicRenderMarker} inheriting entity systems
+		 * Uncomment this line if you use the world's delta within your systems.
 		 */
-		world.setDelta(deltaTime);
+//		world.setDelta(frameTime * 0.000000001f);
+
+		/**
+		 * When you divide accumulator by nanosPerLogicTick you get your alpha.
+		 */
+//		float alpha = (float) accumulator / nanosPerLogicTick;
+
+
+		/** Process all NON {@link LogicRenderMarker} inheriting entity systems */
 		for (int i = 0; i < otherSystems.size; i++) {
+			/**
+			 * Use the kept state from the logic above and interpolate with the current state within your render systems.
+			 */
 			otherSystems.get(i).process();
 			updateEntityStates();
 		}
