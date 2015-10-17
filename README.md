@@ -20,7 +20,7 @@ WorldConfiguration config = new WorldConfigurationBuilder()
 		new MySystemB(),
 		new MySystemC(),
 )
-.register(new GameLoopSystemInvocationStrategy(25))
+.register(new GameLoopSystemInvocationStrategy(40))  // millis per logic tick. default: 40 ~ 25ticks/second 
 .build();
 ```
 
