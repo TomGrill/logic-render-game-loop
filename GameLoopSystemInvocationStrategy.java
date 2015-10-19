@@ -112,6 +112,7 @@ public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
 
 		/**
 		 * When you divide accumulator by nanosPerLogicTick you get your alpha.
+		 * You can store the alpha value in a GameStateComponent f.e.
 		 */
 //		float alpha = (float) accumulator / nanosPerLogicTick;
 
