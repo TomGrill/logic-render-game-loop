@@ -85,6 +85,11 @@ public class GameLoopSystemInvocationStrategy extends SystemInvocationStrategy {
 		currentTime = newTime;
 		accumulator += frameTime;
 
+		// required since artemis-odb-2.0.0-RC4, updateEntityStates() must be called
+		// before processing the first system - in case any entities are
+		// added outside the main process loop
+		updateEntityStates();
+
 		/**
 		 * Uncomment this line if you use the world's delta within your systems.
 		 * I recommend to use a fixed value for your logic delta like millisPerLogicTick or nanosPerLogicTick
